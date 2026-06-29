@@ -137,21 +137,9 @@ function playCoinSound() { playTone(950, 0.08, "triangle", 0.06); setTimeout(() 
 function playPowerSound() { playTone(420, 0.11, "triangle", 0.06); setTimeout(() => playTone(760, 0.11, "triangle", 0.06), 90); }
 
 function startBgm(mode = "normal") {
-  try {
-    ensureAudio();
-    if (currentBgm === mode && bgmOsc) return;
-    stopBgm();
-    currentBgm = mode;
-    bgmOsc = audioCtx.createOscillator();
-    bgmGain = audioCtx.createGain();
-    bgmOsc.type = mode === "boss" || mode === "ura" ? "sawtooth" : "triangle";
-    const freq = mode === "ura" ? 72 : mode === "boss" ? 105 : mode === "teacher" ? 392 : 196;
-    bgmOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    bgmGain.gain.setValueAtTime(mode === "teacher" ? 0.035 : 0.025, audioCtx.currentTime);
-    bgmOsc.connect(bgmGain);
-    bgmGain.connect(audioCtx.destination);
-    bgmOsc.start();
-  } catch (e) {}
+  // BGMはiOSでビープ音が鳴り続ける不具合があるため無効化
+  // この関数を呼び出しても何もしないようにします。
+  return;
 }
 
 function stopBgm() {
@@ -167,14 +155,8 @@ function stopBgm() {
 }
 
 function updateBgm() {
-  // ザッツ先生イベント中は、ビープ音の原因になる連続BGMを止める
-  if (teacherMode) {
-    stopBgm();
-    return;
-  }
-  if (bonusBossMode || finalBossMode) startBgm("boss");
-  else if (uraBossMode) startBgm("ura");
-  else startBgm("normal");
+  // BGMを完全に停止。更新処理は不要。
+  return;
 }
 
 
@@ -968,7 +950,7 @@ function update(dt) {
       enemyCount = 1;
       speedLevel = 1;
       spawnWave();
-      startBgm("normal");
+      // startBgm("normal"); // BGM無効化
 
       bonusMessageText = "ゴルゴは一人に戻った。熊の速さもリセット!";
       bonusMessageUntil = performance.now() + 2200;
@@ -1449,9 +1431,10 @@ function continueGame() {
 function start() {
   startScreen.classList.add("hidden");
   gameOverScreen.classList.add("hidden");
-  ensureAudio();
+  // 初期化時にAudioContextやBGMを再生しない。iOSのビープ音対策のため。
+  // ensureAudio();
   resetGame();
-  startBgm('normal');
+  // startBgm('normal'); // 無効化
   lastTime = performance.now();
   requestAnimationFrame(gameLoop);
 }
