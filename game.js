@@ -109,49 +109,15 @@ let bgmGain = null;
 let currentBgm = "";
 
 function ensureAudio() {
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
-  } catch (e) {}
+  return;
 }
 
 function playTone(freq = 440, duration = 0.08, type = "square", volume = 0.05) {
-  try {
-    ensureAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  } catch (e) {}
+  return;
 }
 
-function playGunSound() { playTone(760, 0.055, "square", doubleGolgoMode ? 0.07 : 0.05); }
-function playBearSound() { playTone(95, 0.18, "sawtooth", 0.07); }
-function playCoinSound() { playTone(950, 0.08, "triangle", 0.06); setTimeout(() => playTone(1250, 0.08, "triangle", 0.05), 70); }
-function playPowerSound() { playTone(420, 0.11, "triangle", 0.06); setTimeout(() => playTone(760, 0.11, "triangle", 0.06), 90); }
-
-function startBgm(mode = "normal") {
-  try {
-    ensureAudio();
-    if (currentBgm === mode && bgmOsc) return;
-    stopBgm();
-    currentBgm = mode;
-    bgmOsc = audioCtx.createOscillator();
-    bgmGain = audioCtx.createGain();
-    bgmOsc.type = mode === "boss" || mode === "ura" ? "sawtooth" : "triangle";
-    const freq = mode === "ura" ? 72 : mode === "boss" ? 105 : mode === "teacher" ? 392 : 196;
-    bgmOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    bgmGain.gain.setValueAtTime(mode === "teacher" ? 0.035 : 0.025, audioCtx.currentTime);
-    bgmOsc.connect(bgmGain);
-    bgmGain.connect(audioCtx.destination);
-    bgmOsc.start();
-  } catch (e) {}
+function playGunSound() {
+  return;
 }
 
 function stopBgm() {
@@ -164,45 +130,20 @@ function stopBgm() {
   bgmOsc = null;
   bgmGain = null;
   currentBgm = "";
+  return;
 }
 
 function updateBgm() {
-  if (teacherMode) startBgm("teacher");
-  else if (bonusBossMode || finalBossMode) startBgm("boss");
-  else if (uraBossMode) startBgm("ura");
-  else startBgm("normal");
+  return;
 }
 
 
 function speak(text) {
-  try {
-    if ("speechSynthesis" in window) {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "ja-JP";
-      u.rate = 1.08;
-      u.pitch = 1.25;
-      u.volume = 1;
-      speechSynthesis.speak(u);
-    }
-  } catch (e) {}
+  return;
 }
 
 function playExplosionSound() {
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(160, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.45);
-    gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.48);
-  } catch (e) {}
+  return;
 }
 
 function startShake(power = 10, ms = 450) {
@@ -328,6 +269,7 @@ function spawnWave() {
 
 
 function startTeacherCongratulations() {
+  stopBgm();
   teacherMode = true;
   teacherUntil = performance.now() + 6500;
   enemies = [];
@@ -1402,6 +1344,7 @@ function gameLoop(t) {
 }
 
 function gameOver() {
+  stopBgm();
   if (score > highScore) {
     highScore = score;
     localStorage.setItem("kumaHighScore", String(highScore));
@@ -1465,7 +1408,7 @@ canvas.addEventListener("pointermove", e => {
   player.x = (e.clientX - rect.left) * scaleX;
 });
 canvas.addEventListener("pointerdown", e => {
-  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  if (audioCtx && audioCtx.state === "suspended") 
   const rect = canvas.getBoundingClientRect();
   const scaleX = W / rect.width;
   player.x = (e.clientX - rect.left) * scaleX;
