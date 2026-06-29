@@ -109,15 +109,49 @@ let bgmGain = null;
 let currentBgm = "";
 
 function ensureAudio() {
-  return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch (e) {}
 }
 
 function playTone(freq = 440, duration = 0.08, type = "square", volume = 0.05) {
-  return;
+  try {
+    ensureAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {}
 }
 
-function playGunSound() {
-  return;
+function playGunSound() { playTone(760, 0.055, "square", doubleGolgoMode ? 0.07 : 0.05); }
+function playBearSound() { playTone(95, 0.18, "sawtooth", 0.07); }
+function playCoinSound() { playTone(950, 0.08, "triangle", 0.06); setTimeout(() => playTone(1250, 0.08, "triangle", 0.05), 70); }
+function playPowerSound() { playTone(420, 0.11, "triangle", 0.06); setTimeout(() => playTone(760, 0.11, "triangle", 0.06), 90); }
+
+function startBgm(mode = "normal") {
+  try {
+    ensureAudio();
+    if (currentBgm === mode && bgmOsc) return;
+    stopBgm();
+    currentBgm = mode;
+    bgmOsc = audioCtx.createOscillator();
+    bgmGain = audioCtx.createGain();
+    bgmOsc.type = mode === "boss" || mode === "ura" ? "sawtooth" : "triangle";
+    const freq = mode === "ura" ? 72 : mode === "boss" ? 105 : mode === "teacher" ? 392 : 196;
+    bgmOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    bgmGain.gain.setValueAtTime(mode === "teacher" ? 0.035 : 0.025, audioCtx.currentTime);
+    bgmOsc.connect(bgmGain);
+    bgmGain.connect(audioCtx.destination);
+    bgmOsc.start();
+  } catch (e) {}
 }
 
 function stopBgm() {
@@ -130,20 +164,49 @@ function stopBgm() {
   bgmOsc = null;
   bgmGain = null;
   currentBgm = "";
-  return;
 }
 
 function updateBgm() {
-  return;
+  // ザッツ先生イベント中は、ビープ音の原因になる連続BGMを止める
+  if (teacherMode) {
+    stopBgm();
+    return;
+  }
+  if (bonusBossMode || finalBossMode) startBgm("boss");
+  else if (uraBossMode) startBgm("ura");
+  else startBgm("normal");
 }
 
 
 function speak(text) {
-  return;
+  try {
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP";
+      u.rate = 1.08;
+      u.pitch = 1.25;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    }
+  } catch (e) {}
 }
 
 function playExplosionSound() {
-  return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.45);
+    gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.48);
+  } catch (e) {}
 }
 
 function startShake(power = 10, ms = 450) {
@@ -905,6 +968,7 @@ function update(dt) {
       enemyCount = 1;
       speedLevel = 1;
       spawnWave();
+      startBgm("normal");
 
       bonusMessageText = "ゴルゴは一人に戻った。熊の速さもリセット!";
       bonusMessageUntil = performance.now() + 2200;
@@ -1344,7 +1408,6 @@ function gameLoop(t) {
 }
 
 function gameOver() {
-  stopBgm();
   if (score > highScore) {
     highScore = score;
     localStorage.setItem("kumaHighScore", String(highScore));
@@ -1408,7 +1471,7 @@ canvas.addEventListener("pointermove", e => {
   player.x = (e.clientX - rect.left) * scaleX;
 });
 canvas.addEventListener("pointerdown", e => {
-  if (audioCtx && audioCtx.state === "suspended") 
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
   const rect = canvas.getBoundingClientRect();
   const scaleX = W / rect.width;
   player.x = (e.clientX - rect.left) * scaleX;
